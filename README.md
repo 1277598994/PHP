@@ -1,2 +1,5 @@
-# PHP
-ceshi
+<?php
+
+echo phpinfo();
+
+?>
