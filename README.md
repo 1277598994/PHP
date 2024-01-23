@@ -1,5 +1,2 @@
-<?php
+# Oplian
 
-echo phpinfo();
-
-?>
