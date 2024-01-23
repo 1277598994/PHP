@@ -1,17 +1,155 @@
-# Oplian
+## 安装部署
 
-## 安装
+<font color = sandybrown >注: 以运行环境为linux下Ubuntu系统,使用`root`用户进行操作</font>
 
-首先，从 GitHub 克隆仓库: <br />
-`git clone git@git.ipfsstorage.cn:8989/jyliangc/oplian-stand.git`<br />
-`cd cli`<br />
 
-**主网安装**
-`make glif`<br />
-`sudo make install`<br />
-`make config`<br />
+首先，从 `GitHub` 克隆仓库: <br />
+`git clone http://git.ipfsstorage.cn:8989/jyliangc/oplian-stand.git` <br/>
+生成对应的安装包 <br/>
+`make clean all`<br/>
 
-**测试网安装**
-`make calibnet`<br />
-`sudo make install`<br />
-`make calibnet-config`<br />
+生成的安装包为:<br/>
+`oplian oplian-gateway oplian-op oplian-op-c2`
+
+
+## oplian部署
+
+<font color = sandybrown >注: 需要保证部署`oplian`的机器有公网`IP`</font>
+
+创建`/root/oplian`目录 <br />
+`mkdir -p /root/oplian/`<br />
+
+将生成的对应`oplian`包放到该目录下<br />
+
+执行授权 `chmod 777 oplian`
+
+运行`oplian` <br /> 
+`./oplian`<br />
+
+系统会自动创建 `/root/oplian/config`目录,并创建`config.yaml,config_room.yaml`文件<br />
+
+#### config.yaml文件
+```
+mysql:
+  path: 127.0.0.1         // 数据库IP
+  port: "3306"
+  config: charset=utf8mb4&parseTime=True&loc=Local
+  db-name: oplian_test    // 数据库名
+  username: root          // 用户名
+  password: 123456        // 密码
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: error
+  log-zap: false
+system:
+  env: public
+  addr: 50005               // 对应的oplian端口
+  db-type: mysql
+  oss-type: local
+  use-multipoint: false
+  iplimit-count: 15000
+  iplimit-time: 3600
+
+```
+在数据修改无误后再次运行`oplian`即可<br />
+`./oplian` or `nohup ./oplian > log/oplian.log &`<br/>
+
+## oplian-gateway部署
+
+<font color = sandybrown >注: 需要保证部署`oplian-gateway`的机器有公网`IP`</font>
+
+
+创建`/root/oplian`目录 <br/>
+`mkdir -p /root/oplian/`<br/>
+
+将生成的对应`oplian-gateway`包放到该目录下<br/>
+
+执行授权 `chmod 777 oplian-gateway`<br/>
+
+运行`oplian-gateway`<br/>
+`./oplian-gateway run`<br/>
+
+系统会自动创建 `/root/oplian/config`目录,并创建`config.yaml,config_room.yaml`文件<br />
+#### config.yaml文件
+```
+mysql:
+  path: 127.0.0.1         // 数据库IP
+  port: "3306"
+  config: charset=utf8mb4&parseTime=True&loc=Local
+  db-name: oplian_test    // 数据库名
+  username: root          // 用户名
+  password: 123456        // 密码
+  max-idle-conns: 10
+  max-open-conns: 100
+  log-mode: error
+  log-zap: false
+```
+#### config_room.yaml文件
+```
+web:
+  addr: 127.0.0.1:50005         // 填写对应前面的oplian地址和端口
+  token: slfsdaklfhasldfjda
+gateway:
+  gateWayId: 8b356e3d-5e35-47a6-a933-07baa8cc0fcb
+  port: 50006       
+  ip: 127.0.0.1     // 填写对应机器内网IP
+  token: slfsdaklfhasldfjda
+```
+
+在数据无误后再次运行`oplian-gateway`<br/>
+
+其中对应命令`./oplian-gateway run --help`<br/>
+
+```
+NAME:
+   oplian-gateway run - 运行
+
+USAGE:
+   oplian-gateway run [command options] [arguments...]
+
+OPTIONS:
+   --listen-ip value  内网IP  
+   --help, -h         show help
+```
+
+系统会自动检测内网`IP`,当有多个或者检测不到时,需要手动录入对应内网`IP`<br/>
+启动命令变为<br/>
+`./oplian-gateway run --listen-ip 对应内网IP`
+
+## oplian-op部署
+
+<font color = sandybrown >注: 需要保证部署的`op`机器在内网上和对应的`gateway`机器连通</font><br/>
+
+在基于`oplian-gateway`已创建为前提下, 借助指令即可获取对应的`oplian`文件和创建对应目录<br/>
+`curl -fsSL http://10.0.1.77:50009/download/sh | bash && source ~/.bashrc`<br/>
+
+其中`10.0.1.77`为对应`gateway`的内网地址,根据不同`gateway`进行替换即可<br/>
+
+如果系统未安装对应信息,可以借助命令进行系统初始化,安装必备软件<br/>
+其中对应命令`./oplian-op init`<br/>
+
+确保系统无误后
+执行对应命令`./oplian-op run --help`<br/>
+
+```
+NAME:
+   oplian-op run - 运行
+
+USAGE:
+   oplian-op run [command options] [arguments...]
+
+OPTIONS:
+   --dc-type               是否是DC原值主机, true为设置该机器为原值主机类型, false为不设置, 默认为非原值主机 (default: false)
+   --storage               是否是存储机 (default: false)
+   --listen-ip value       内网IP 
+   --paramters-path value  指定证明参数路径
+   --not-proof-parameters  如果不存在证明参数，程序会到文件管理平台上下载。但由于批量下载会出现问题，建议提前在/mnt/md0中准备filecoin-proof-parameters (default: false)
+   --worker                是否是算力机 (default: false)
+   --miner                 是否是miner机 (default: false)
+   --help, -h              show help
+```
+
+运行命令<br/>
+`./oplian-op run` 根据需要拼接对应的命令<br/>
+
+即可正常启动`oplian-op`<br/>
